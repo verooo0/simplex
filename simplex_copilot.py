@@ -33,9 +33,6 @@ def leer_datos(dir_problema):
     
     return np.array(A), np.array(b), np.array(c)
 
-
-A,b,c =leer_datos('./Problemes/prob1.txt')
-
 import numpy as np
 from numpy.linalg import inv
 
@@ -148,7 +145,11 @@ class Simplex:
                     return {"z": z, "xb": xb, "var_b": var_b}
 
             # Seleccionar variable entrante (más negativa)
-            q = np.argmin(r)
+
+            # REGLA DE BLAND
+            negative_indices = np.where(r < -tol)[0]
+            if len(negative_indices) > 0:
+                q = negative_indices[0]
 
             # Dirección de movimiento
             d = -Ab_inv @ An[:, q]
@@ -157,18 +158,23 @@ class Simplex:
                 raise Exception("Problema no acotado")
 
             # Calcular theta (máximo paso posible)
-            theta_list = []
+            # REGLA DE BLAND
+            theta = np.inf
+            p = -1
             for i in range(len(d)):
                 if d[i] < -tol:
-                    theta_list.append(-xb[i] / d[i])
-                else:
-                    theta_list.append(np.inf)
-            theta = min(theta_list)
-            p = theta_list.index(theta)
+                    theta_i = -xb[i] / d[i]
+                    # Si es menor o hay empate pero con índice más pequeño
+                    if theta_i < theta - tol or (abs(theta_i - theta) < tol and var_b[i] < var_b[p]):
+                        theta = theta_i
+                        p = i
 
             # Actualizar variables básicas
             xb = xb + theta * d
             xb[p] = theta  # Asegurar precisión numérica
+            
+            if np.all(np.abs(xb) < tol):
+                raise Exception("Problema no factible")
 
             # Actualizar valor de z
             z += theta * r[q]
@@ -187,20 +193,19 @@ class Simplex:
     def solve(self):
         try:
             base_factible = self.faseI()
-            resultado = self.faseII(base_factible)
-            return resultado
+            resultat_dict = self.faseII(base_factible)
+            resultat = resultat_dict["z"], set(np.array(resultat_dict["var_b"]) + 1)
+            return resultat
         except Exception as e:
             return str(e)
 
 
-simplex = Simplex(A, b, c)
-x = simplex.solve()
+for i in range(1, 6):
+    print(f"Resultado para prob{i}.txt:")
+    A, b, c = leer_datos(f'./Problemes/prob{i}.txt')
+    simplex = Simplex(A, b, c)
+    resultat = simplex.solve()
+    print(resultat)
+    print("-" * 50)
 
-print(x['z'], x['var_b'])
-
-print((np.array(x['var_b']) + 1).tolist())
-
-y ={2,7,8,5,10,1,16,18,13,12}
-
-print(y == set((np.array(x['var_b']) + 1).tolist()))
 
