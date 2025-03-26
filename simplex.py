@@ -32,7 +32,7 @@ def leer_datos(dir_problema):
     return np.array(A), np.array(b), np.array(c)
 
 
-A,b,c =leer_datos('prob1.txt')
+A,b,c =leer_datos('./Problemes/prob1.txt')
 
 
 def faseI(A, b, c):
@@ -44,7 +44,7 @@ def faseI(A, b, c):
     An = A
     cn= np.array([0] * len(c))
     cb = np.array([1] * len(A))
-    xb = np.dot(np.inv(Ab),b)
+    xb = np.linalg.solve(Ab, b) # Comprobar que faci la inversa
     xn = np.array([0] * len(c))
     z = np.dot(cb,xb)
     faseII(An,b,c)
@@ -54,6 +54,9 @@ def faseII(A, b, c):
     pass
 
 def simplex(A,b,c):
+    pass
+
+def solve(A,b,c):
     #fase 1
     faseI(A,b,c)
 
