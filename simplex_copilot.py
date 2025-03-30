@@ -40,13 +40,21 @@ import numpy as np
 from numpy.linalg import inv, LinAlgError
 
 class Simplex:
-    def __init__(self, A, b, c):
+    def __init__(self, A, b, c, display=True):
+        if display:
+            print('Inici simplex primal amb regla de Bland')
+
         self.A_orig = A.copy()  # Guardar matriz original
         self.b_orig = b.copy()
         self.c_orig = c.copy()
         self.m, self.n = A.shape  # m restricciones, n variables originales
+        self.iter = 1
+        self.display = display
 
     def faseI(self):
+        if self.display:
+            print('Fase I')
+
         A = self.A_orig
         b = self.b_orig
         m, n = self.m, self.n
@@ -101,9 +109,15 @@ class Simplex:
         if len(var_b_final) != m:
             raise Exception("No se pudo eliminar todas las variables artificiales")
 
+        if self.display:
+            print("Solució bàsica factible trobada, iteració", self.iter-1)
+
         return var_b_final
 
     def faseII(self, var_b):
+        if self.display:
+            print('Fase II')
+
         A = self.A_orig  # Usar matriz original
         b = self.b_orig
         c = self.c_orig
@@ -123,7 +137,11 @@ class Simplex:
 
         z = np.dot(cb, xb)
 
-        return self.__simplex(cn, cb, An, Ab, xb, z, var_nb, var_b, fase_I=False)
+        resultat_faseII = self.__simplex(cn, cb, An, Ab, xb, z, var_nb, var_b, fase_I=False)
+
+        if self.display:
+            print(f'Solució òptima trobada, iteració {self.iter-1}, z = {resultat_faseII['z']:.3f}')
+        return resultat_faseII
 
     def __simplex(self, cn, cb, An, Ab, xb, z, var_nb, var_b, fase_I):
         iter_max = 1000  # Prevenir bucles infinitos
@@ -142,7 +160,7 @@ class Simplex:
                 if fase_I:
                     return var_b
                 else:
-                    return {"z": z, "xb": xb, "var_b": var_b}
+                    return {"z": z, "xb": xb, "var_b": var_b, "r": r}   
 
             # Seleccionar variable entrante (más negativa)
 
@@ -188,6 +206,10 @@ class Simplex:
             # Actualizar vectores de coste
             cb[p], cn[q] = cn[q], cb[p]
 
+            if self.display:
+                print(f"Iteració {self.iter}: iout = {p}, q = {q}, theta* = {theta:.3f}, z = {z:.3f}")
+            self.iter += 1
+
         raise Exception("Número máximo de iteraciones alcanzado")
 
     def solve(self):
@@ -195,17 +217,31 @@ class Simplex:
             base_factible = self.faseI()
             resultat_dict = self.faseII(base_factible)
             resultat = resultat_dict["z"], set(np.array(resultat_dict["var_b"]) + 1)
+            
+            if self.display:
+                print('Fi simplex primal')
+                print('\nSolució òptima:\n')
+                print(f'vb = {' '.join(map(str, resultat_dict["var_b"]))}')
+                print(f'xb = {' '.join(map(lambda x: f"{x:.1f}", resultat_dict["xb"]))}')
+                print(f'z = {resultat_dict["z"]:.3f}')
+                print(f'r = {' '.join(map(lambda x: f"{x:.1f}", resultat_dict["r"]))}\n')
+
             return resultat
         except Exception as e:
             return str(e)
 
 
-for i in range(1, 6):
+A, b, c = leer_datos(f'./Problemes/prob1.txt')
+simplex = Simplex(A, b, c, display=True)
+resultat = simplex.solve()
+
+
+"""for i in range(1, 9):
     print(f"Resultado para prob{i}.txt:")
     A, b, c = leer_datos(f'./Problemes/prob{i}.txt')
-    simplex = Simplex(A, b, c)
+    simplex = Simplex(A, b, c, display=False)
     resultat = simplex.solve()
     print(resultat)
     print("-" * 50)
 
-
+"""
