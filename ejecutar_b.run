@@ -1,0 +1,7 @@
+reset;
+model modelizacion_b.mod;
+data datos_b.dat;
+option solver gurobi;   # o cualquier solver entero que tengas disponible (gurobi, glpk...)
+solve;
+display TotalFlow;
+display {i in Intersections: x[i] = 1};
